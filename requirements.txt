@@ -1,0 +1,9 @@
+# Copilot engine (Apple silicon, Python 3.11+). Speech: mlx-audio; local answer models: mlx-lm (text) and mlx-vlm (reads images).
+mlx-audio==0.6.7
+mlx-lm==0.32.2
+mlx-vlm==0.8.0
+huggingface_hub>=1.0
+numpy
+scipy
+soundfile
+pillow

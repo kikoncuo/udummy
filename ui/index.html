@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Copiloto</title>
+<link rel="stylesheet" href="style.css" id="css">
+</head>
+<body>
+<div id="app" data-phase="idle" data-view="main">
+  <header>
+    <div id="state" title="">
+      <span id="dot"></span>
+      <span id="stateText">Arrancando…</span>
+    </div>
+    <span class="spacer"></span>
+    <button class="icon" id="openSettings" title="Ajustes (⌘,)" aria-label="Ajustes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <button class="icon" id="hide" title="Ocultar (el atajo lo vuelve a mostrar)" aria-label="Ocultar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+    </button>
+    <button class="icon" id="restart" title="Reiniciar el copiloto (cierra y vuelve a abrir)" aria-label="Reiniciar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+    <button class="icon" id="quit" title="Salir del copiloto" aria-label="Salir">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></svg>
+    </button>
+  </header>
+
+  <div id="banner" role="status" hidden></div>
+
+  <!-- ===== main view ===== -->
+  <section id="mainView" class="view">
+    <main id="card">
+      <div id="asked" hidden>
+        <img id="thumb" alt="Captura enviada al modelo" title="Captura enviada: clic para ampliar" hidden>
+        <div id="askedText"></div>
+      </div>
+      <div id="answer" class="empty">Pulsa <b>Preguntar</b> cuando quieras una respuesta a lo que se está diciendo.</div>
+    </main>
+
+    <div id="meta">
+      <span id="timing"></span>
+      <span class="spacer"></span>
+      <button class="icon small" id="prev" title="Respuesta anterior" aria-label="Respuesta anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+      <span id="pos"></span>
+      <button class="icon small" id="next" title="Respuesta siguiente" aria-label="Respuesta siguiente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+      <button class="icon small" id="copy" title="Copiar la respuesta" aria-label="Copiar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span class="label sr">Copiar</span></button>
+      <button class="icon small" id="clear" title="Borrar las respuestas (la transcripción sigue)" aria-label="Borrar respuestas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+    </div>
+
+    <details id="heardBox">
+      <summary><span>Transcripción en vivo</span><span id="heardInfo"></span></summary>
+      <div id="heard"></div>
+    </details>
+
+    <footer id="composer">
+      <input id="instruction" type="text" autocomplete="off" spellcheck="false" placeholder="Opcional: cómo la quieres («en inglés», «tres puntos»)">
+      <div id="buttons">
+        <button id="askScreen" class="secondary" title="Pregunta enviando también una captura de la pantalla"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg><span class="label">Con pantalla</span></button>
+        <button id="ask" class="primary"><span class="label">Preguntar</span><kbd id="askKey">⌥↩</kbd></button>
+      </div>
+      <div id="foot">
+        <span id="modelNow" title="Se cambia en Ajustes"></span>
+        <span id="spend"></span>
+        <span class="spacer"></span>
+        <button class="link" id="reset" title="Borra la transcripción y las respuestas y empieza de cero">Nueva conversación</button>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ===== settings view ===== -->
+  <section id="settingsView" class="view" hidden>
+    <div class="viewhead">
+      <button class="icon" id="closeSettings" title="Volver (Esc)" aria-label="Volver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+      <h1>Ajustes</h1>
+      <span class="spacer"></span><span id="promptState" class="hint" aria-live="polite"></span>
+    </div>
+    <div id="settings" class="scroll">
+      <h2>Al preguntar, usa</h2>
+      <div class="group">
+        <div class="seg" role="radiogroup" aria-label="Qué usa al preguntar">
+          <label><input type="radio" name="source" value="audio"><span>Audio</span></label>
+          <label><input type="radio" name="source" value="screen"><span>Pantalla</span></label>
+          <label><input type="radio" name="source" value="both"><span>Audio y pantalla</span></label>
+        </div>
+      </div>
+      <p class="foot" id="sourceFoot"></p>
+
+      <h2>Atajo de Preguntar</h2>
+      <div class="group">
+        <div class="srow"><span id="hotkeyLabel">⌥↩</span><button class="small" id="hotkeyRecord">Cambiar…</button><button class="small" id="hotkeyDefault">⌥↩</button><button class="small" id="hotkeyNone">Quitar</button></div>
+      </div>
+      <p class="foot" id="hotkeyFoot">Funciona en cualquier app. Si el panel está oculto, la primera pulsación solo lo muestra.</p>
+
+      <h2>Ventana</h2>
+      <div class="group">
+        <label class="srow"><span>Siempre encima</span><input type="checkbox" role="switch" id="onTop"></label>
+        <label class="srow"><span>Oculto al compartir pantalla</span><input type="checkbox" role="switch" id="hideCapture"></label>
+      </div>
+      <p class="foot" id="hideHint">Oculto: si compartes la pantalla entera, los demás no ven este panel. Tú sí. Para moverlo, arrástralo desde la barra de arriba.</p>
+
+      <h2>Audio</h2>
+      <div class="group">
+        <div class="srow"><span id="audioState">Comprobando…</span><button class="small" id="audioPrivacy">Privacidad</button></div>
+      </div>
+      <p class="foot">Escucha lo que suena en este Mac (no el micrófono). Si suena algo y no aparece texto, permite «Copilot» en Privacidad › Grabación de pantalla y audio del sistema.</p>
+
+      <h2>Modelo de respuestas</h2>
+      <div class="group">
+        <div class="srow"><select id="defModel"></select></div>
+        <div class="srow" id="otherRow" hidden><input id="otherModel" type="text" autocomplete="off" spellcheck="false" placeholder="proveedor/modelo"><button class="small" id="otherSave">Usar</button></div>
+      </div>
+      <p class="foot"><span id="pickerDate"></span></p>
+
+      <h3 class="sub">En este Mac (sin conexión, gratis)</h3>
+      <div class="group stack"><div id="llmLocal"></div><div id="llmCatalog"></div><div class="srow"><input id="llmRepo" type="text" autocomplete="off" spellcheck="false" placeholder="otro de Hugging Face (usuario/modelo)"><button class="small" id="llmRepoGo">Descargar</button></div></div>
+
+      <h3 class="sub">Buscar en OpenRouter</h3>
+      <div class="group">
+        <div class="srow"><input id="orSearch" type="text" autocomplete="off" spellcheck="false" placeholder="gpt, claude, gemini, llama…"></div>
+        <div id="orResults"></div>
+        <div id="myModels"></div>
+      </div>
+      <p class="foot">Lo que añades aparece en el menú de arriba. Precio en $ por millón de tokens (entrada / salida).</p>
+
+      <h2>Transcripción de voz</h2>
+      <div class="group">
+        <div class="seg" role="radiogroup" aria-label="Cómo se transcribe">
+          <label><input type="radio" name="sttMode" value="local"><span>En este Mac</span></label>
+          <label><input type="radio" name="sttMode" value="cloud"><span>En la nube</span></label>
+          <label><input type="radio" name="sttMode" value="off"><span>Apagada</span></label>
+        </div>
+        <div id="sttLocal"></div>
+        <div class="srow" id="sttCloudRow"><select id="sttCloud"></select></div>
+        <div id="sttCatalog"></div>
+      </div>
+      <p class="foot" id="sttFoot"></p>
+
+      <h2>Carpeta de modelos</h2>
+      <div class="group">
+        <div class="srow"><span id="modelsDirNow" class="mono"></span></div>
+        <div class="srow"><input id="modelsDir" type="text" autocomplete="off" spellcheck="false" placeholder="/ruta/a/otra/carpeta"><button class="small" id="modelsDirGo">Mover aquí</button></div>
+      </div>
+      <p class="foot">Los modelos descargados se mueven a la carpeta nueva (en el mismo disco es instantáneo). Puede ser un disco externo.</p>
+
+      <h2>Clave de OpenRouter</h2>
+      <div class="group">
+        <div class="srow"><span id="keySource">—</span><button class="small" id="keyTest">Probar</button><button class="small" id="keyDelete">Borrar</button></div>
+        <div class="srow"><input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-or-…"><button class="small" id="keySave">Guardar</button></div>
+      </div>
+      <p class="foot"><span id="keyState"></span> Se guarda en el llavero de macOS, nunca en un archivo. Probarla no gasta nada.</p>
+
+      <h2>Instrucciones para el modelo</h2>
+      <div class="group">
+        <textarea id="prompt" rows="8" spellcheck="false"></textarea>
+        <div class="srow end"><button class="small" id="promptDefault">Restaurar</button><button class="small primary" id="promptSave">Guardar</button></div>
+      </div>
+      <p class="foot">Siempre se añade al final: <i id="guard"></i></p>
+      <span id="settingsInfo" hidden></span>
+    </div>
+  </section>
+
+  <div id="hideTip" class="sheet" role="dialog" aria-modal="true" aria-labelledby="hideTipTitle" hidden>
+    <div class="sheetbox">
+      <h2 id="hideTipTitle">El panel se oculta</h2>
+      <p id="hideTipText"></p>
+      <label class="check"><input type="checkbox" id="hideTipNever"> No volver a mostrar</label>
+      <div class="srow end"><button class="small" id="hideTipCancel">Cancelar</button><button class="small primary" id="hideTipOk">Ocultar</button></div>
+    </div>
+  </div>
+
+  <div id="lightbox" hidden><img id="big" alt="Captura enviada al modelo"><span>Clic o Esc para cerrar</span></div>
+</div>
+<script src="app.js" id="js"></script>
+</body>
+</html>

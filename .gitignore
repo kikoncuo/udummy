@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+shell/build/
+env.local.sh
+home/
+logs/
+.DS_Store
