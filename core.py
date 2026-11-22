@@ -360,6 +360,42 @@ def local_stt_models() -> list[dict]:
     return local_models("voice")
 
 
+# answers only: no reasoning, no control tags (Inkling: <|content_thinking|>…<|end_message|>; Qwen: <think>…</think>)
+NO_THINKING = {"enable_thinking": False, "reasoning_effort": "none"}
+_THINK_OPEN = ("<|content_thinking|>", "<think>")
+_THINK_CLOSE = {"<|content_thinking|>": "<|end_message|>", "<think>": "</think>"}
+
+
+def answer_only(pieces: Iterator[str]) -> Iterator[str]:
+    """Filter a stream of text pieces: drop reasoning blocks and every <|…|> control tag, keep the answer text."""
+    buf, inside = "", None
+    for piece in pieces:
+        buf += piece
+        while buf:
+            if inside:
+                end = buf.find(_THINK_CLOSE[inside])
+                if end < 0:
+                    buf = buf[-len(_THINK_CLOSE[inside]):]; break
+                buf = buf[end + len(_THINK_CLOSE[inside]):]; inside = None; continue
+            starts = [(buf.find(t), t) for t in _THINK_OPEN if buf.find(t) >= 0]
+            if starts:
+                i, tag = min(starts)
+                head = re.sub(r"<\|[a-z_]+\|>", "", buf[:i])
+                if head:
+                    yield head
+                buf = buf[i + len(tag):]; inside = tag; continue
+            cut = buf.rfind("<")                       # keep a possibly unfinished tag for the next piece
+            keep = buf[cut:] if cut >= 0 and ">" not in buf[cut:] and len(buf) - cut < 24 else ""
+            out = re.sub(r"<\|[a-z_]+\|>", "", buf[:len(buf) - len(keep)])
+            if out:
+                yield out
+            buf = keep; break
+    if buf and not inside:
+        out = re.sub(r"<\|[a-z_]+\|>", "", buf)
+        if out:
+            yield out
+
+
 class LocalLLM:
     """One local answer model loaded at a time (mlx-lm for text, mlx-vlm when it reads images). Streams text pieces."""
 
@@ -393,17 +429,17 @@ class LocalLLM:
                 from mlx_vlm import stream_generate as vgen
                 from mlx_vlm.prompt_utils import apply_chat_template as vtemplate
                 imgs = [Image.open(io.BytesIO(image)).convert("RGB")] if image is not None else []
-                prompt = vtemplate(self.proc, self.model.config, system + "\n\n" + text, num_images=len(imgs))
-                for r in vgen(self.model, self.proc, prompt, image=imgs or None, max_tokens=max_tokens):
-                    if getattr(r, "text", ""):
-                        yield r.text
+                try:
+                    prompt = vtemplate(self.proc, self.model.config, system + "\n\n" + text, num_images=len(imgs), **NO_THINKING)
+                except TypeError:
+                    prompt = vtemplate(self.proc, self.model.config, system + "\n\n" + text, num_images=len(imgs))
+                yield from answer_only(r.text for r in vgen(self.model, self.proc, prompt, image=imgs or None, max_tokens=max_tokens)
+                                       if getattr(r, "text", ""))
             else:
                 from mlx_lm import stream_generate as lgen
                 msgs = [{"role": "system", "content": system}, {"role": "user", "content": text}]
-                prompt = self.proc.apply_chat_template(msgs, add_generation_prompt=True, tokenize=False)
-                for r in lgen(self.model, self.proc, prompt, max_tokens=max_tokens):
-                    if getattr(r, "text", ""):
-                        yield r.text
+                prompt = self.proc.apply_chat_template(msgs, add_generation_prompt=True, tokenize=False, **NO_THINKING)
+                yield from answer_only(r.text for r in lgen(self.model, self.proc, prompt, max_tokens=max_tokens) if getattr(r, "text", ""))
 
 
 LOCAL_LLM = LocalLLM()

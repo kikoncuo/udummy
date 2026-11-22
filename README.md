@@ -84,6 +84,9 @@ Transcript, screenshots and answers live in memory and are gone when you quit. T
 - **Oculto al compartir pantalla** uses macOS's own flag for windows that must not be captured. Most sharing tools respect it; not every
   one has been tested.
 - Local answer models need memory: a 0.8B model peaks at about 1.2 GB; the first load from a slow disk can take a couple of minutes.
+- Bigger local models work too, if your Mac has room. Inkling-2-Mini (2.5-bit MLX build, 11 GB) needs about **15 GB free** and an
+  mlx-vlm newer than 0.8.0; on a 48 GB Mac it loaded in about 2 minutes and answered at about 39 tokens/s, but don't run it next to
+  other heavy work. The default suggestion stays the small Qwen3.5.
 - Every rebuild of the app (`./install.sh` again) makes macOS ask for the permissions again.
 
 ## For tinkerers
